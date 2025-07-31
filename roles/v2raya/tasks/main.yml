@@ -1,0 +1,55 @@
+- name: Create directory for APT keyrings
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: Download v2raya GPG key and dearmor
+  ansible.builtin.get_url:
+    url: https://apt.v2raya.org/key/public-key.asc
+    dest: /etc/apt/keyrings/v2raya-archive-keyring.asc
+    mode: '0644'
+  become: true
+
+- name: Convert v2raya key to binary .gpg
+  ansible.builtin.command:
+    cmd: >
+      gpg --dearmor
+      --yes
+      -o /etc/apt/keyrings/v2raya-archive-keyring.gpg
+      /etc/apt/keyrings/v2raya-archive-keyring.asc
+  args:
+    creates: /etc/apt/keyrings/v2raya-archive-keyring.gpg
+  become: true
+
+- name: Remove ASCII-armored v2raya key
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/v2raya-archive-keyring.asc
+    state: absent
+  become: true
+
+- name: Add v2raya APT repository with signed‑by
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/v2raya-archive-keyring.gpg]
+      https://apt.v2raya.org/ v2raya main
+    filename: v2raya
+    update_cache: yes
+    state: present
+  become: true
+
+- name: Install v2raya and core v2ray package
+  ansible.builtin.apt:
+    name:
+      - v2raya
+      - v2ray
+    state: present
+  become: true
+
+- name: Ensure v2raya service is enabled and running
+  ansible.builtin.systemd:
+    name: v2raya
+    enabled: true
+    state: started
+  become: true

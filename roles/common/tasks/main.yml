@@ -1,0 +1,140 @@
+---
+# Update packages and install essentials (run as root)
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+  become: true
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+  become: true
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: 
+      - build-essential
+      - curl
+      - git
+      - vim
+      - unzip
+      - htop
+      - software-properties-common
+      - openssh-server
+      - radeontop
+    state: present
+  become: true
+
+
+# Configure Git (for the non-root user)
+- name: Ensure git is configured (user)
+  ansible.builtin.git_config:
+    name: user.name
+    value: "Rainerino"
+    scope: global
+  become: false
+
+- name: Set git email (user)
+  ansible.builtin.git_config:
+    name: user.email
+    value: "albertyanyy@gmail.com"
+    scope: global
+  become: false
+
+# Only modify system /etc/hosts via root if needed
+- name: Check connectivity to raw.githubusercontent.com
+  ansible.builtin.command:
+    cmd: ping -c1 -W2 raw.githubusercontent.com
+  register: ping_result
+  changed_when: false
+  ignore_errors: true
+  become: false
+
+- name: Add hosts entry if raw.githubusercontent.com is unreachable
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '^185\.199\.108\.133\s+raw\.githubusercontent\.com'
+    line: '185.199.108.133 raw.githubusercontent.com'
+    state: present
+    backup: yes
+  become: true
+  when: ping_result is failed
+
+# Install zsh and Oh My Zsh (as the non-root user)
+- name: Ensure git and zsh installed
+  ansible.builtin.apt:
+    name:
+      - git
+      - zsh
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Check if ~/.oh-my-zsh exists
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user_id }}/.oh-my-zsh"
+  register: omz_stat
+  become: false
+
+- name: Skip Oh My Zsh installation if already present
+  ansible.builtin.debug:
+    msg: "Oh My Zsh already installed—skipping."
+  when: omz_stat.stat.exists
+
+- name: Run Oh My Zsh installer
+  ansible.builtin.shell: |
+    sh -c "$(curl -fsSL https://gitee.com/mcornella/ohmyzsh/raw/master/tools/install.sh)"
+  args:
+    creates: "/home/{{ ansible_user_id }}/.oh-my-zsh"
+    chdir: "/home/{{ ansible_user_id }}"
+  become: false
+  when: not omz_stat.stat.exists
+
+- name: Set default shell to zsh for the target user
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    shell: /usr/bin/zsh
+  become: true
+
+
+- name: Install Zsh plugins if OMZ is present
+  block:
+    - name: Clone zsh-autosuggestions
+      git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+        depth: 1
+
+    - name: Clone zsh-syntax-highlighting
+      git:
+        repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+        depth: 1
+
+    - name: Optionally install fast-syntax-highlighting plugin
+      git:
+        repo: https://github.com/zdharma-continuum/fast-syntax-highlighting.git
+        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/fast-syntax-highlighting"
+        depth: 1
+      when: fast_syntax|default(false)
+
+    - name: Ensure plugins are enabled in .zshrc
+      lineinfile:
+        path: "/home/{{ ansible_user_id }}/.zshrc"
+        regexp: '^plugins=\('
+        line: >-
+          plugins=(git zsh-autosuggestions zsh-syntax-highlighting
+                   {{ 'fast-syntax-highlighting' if fast_syntax|default(false) else '' }})
+        backrefs: yes
+
+    - name: Source highlight plugin in correct order
+      lineinfile:
+        path: "/home/{{ ansible_user_id }}/.zshrc"
+        insertafter: 'plugins=\('
+        line: 'source $ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
+        state: present
+  when: omz_stat.stat.exists
+  become: false
+
+
+

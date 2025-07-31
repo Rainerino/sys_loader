@@ -1,0 +1,12 @@
+regolith_package_key_url: "https://archive.regolith-desktop.com/regolith.key"
+regolith_repo_base: "https://archive.regolith-desktop.com/ubuntu/stable"
+regolith_repo_suite: "noble"
+regolith_version: "v3.3"
+regolith_arch: "amd64"
+regolith_desktop_packages:
+  - regolith-desktop
+regolith_sessions:
+  - regolith-session-flashback
+regolith_looks:
+  - regolith-look-lascaille
+regolith_remove_asc: true

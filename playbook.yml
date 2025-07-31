@@ -1,0 +1,9 @@
+- name: Configure Ubuntu system
+  hosts: ubuntu
+  remote_user: "{{ ansible_user_id }}"
+  become: false
+  roles:
+    # - regolith
+    - common 
+    - devtools
+    # - v2raya

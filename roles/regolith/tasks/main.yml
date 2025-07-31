@@ -1,0 +1,72 @@
+---
+# Check if 'regolith-desktop' is installed
+- name: Gather installed packages facts
+  ansible.builtin.package_facts:
+    manager: auto
+  become: true
+
+- name: Skip Regolith install if already installed
+  ansible.builtin.debug:
+    msg: "Regolith desktop already installed, skipping."
+  when: "'regolith-desktop' in ansible_facts.packages"
+  tags: regolith_skip
+
+- name: Download Regolith GPG key
+  ansible.builtin.get_url:
+    url: "{{ regolith_package_key_url }}"
+    dest: /usr/share/keyrings/regolith-archive-keyring.asc
+    mode: '0644'
+  become: true
+  when: "'regolith-desktop' not in ansible_facts.packages"
+
+- name: Convert key to binary GPG format
+  ansible.builtin.command:
+    cmd: >
+      gpg --dearmor --yes
+      -o /usr/share/keyrings/regolith-archive-keyring.gpg
+      /usr/share/keyrings/regolith-archive-keyring.asc
+  args:
+    creates: /usr/share/keyrings/regolith-archive-keyring.gpg
+  become: true
+  when: "'regolith-desktop' not in ansible_facts.packages"
+
+- name: Remove ASCII-armored key file
+  ansible.builtin.file:
+    path: /usr/share/keyrings/regolith-archive-keyring.asc
+    state: absent
+  become: true
+  when:
+    - "'regolith-desktop' not in ansible_facts.packages"
+    - regolith_remove_asc | default(true)
+
+- name: Add Regolith APT repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ regolith_arch }}
+      signed-by=/usr/share/keyrings/regolith-archive-keyring.gpg]
+      {{ regolith_repo_base }} {{ regolith_repo_suite }} {{ regolith_version }}
+    filename: regolith
+    update_cache: yes
+    state: present
+  become: true
+  when: "'regolith-desktop' not in ansible_facts.packages"
+
+- name: Install Regolith packages
+  ansible.builtin.apt:
+    name: "{{ regolith_desktop_packages + regolith_sessions + regolith_looks }}"
+    state: present
+  become: true
+  when: "'regolith-desktop' not in ansible_facts.packages"
+
+
+- name: Install Regolith plugins
+  ansible.builtin.apt:
+    name: 
+      - i3xrocks-cpu-usage
+      - i3xrocks-memory
+      - i3xrocks-temp
+      - i3xrocks-volume 
+      - i3xrocks-weather 
+      - i3xrocks-disk-capacity
+    state: present
+  become: true
