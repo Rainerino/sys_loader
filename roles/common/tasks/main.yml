@@ -19,6 +19,7 @@
       - vim
       - unzip
       - htop
+      - tmux
       - software-properties-common
       - openssh-server
       - radeontop

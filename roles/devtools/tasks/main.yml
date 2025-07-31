@@ -1,59 +1,60 @@
 ---
-- name: Ensure Node.js and npm are installed
-  ansible.builtin.apt:
-    name:
-      - nodejs
-      - npm
-    state: present
-    update_cache: yes
+  - name: Ensure Node.js and npm are installed
+    ansible.builtin.apt:
+      name:
+        - nodejs
+        - npm
+      state: present
+      update_cache: yes
+    become: true
 
-- name: Check if Rust (cargo) is already installed
-  ansible.builtin.command:
-    cmd: command -v cargo
-  register: cargo_exist
-  changed_when: false
-  ignore_errors: true
+# - name: Check if Rust (cargo) is already installed
+#   ansible.builtin.command:
+#     cmd: command -v cargo
+#   register: cargo_exist
+#   changed_when: false
+#   ignore_errors: true
 
-- name: Download rustup installer script
-  ansible.builtin.get_url:
-    url: https://sh.rustup.rs
-    dest: /tmp/rustup-init.sh
-    mode: '0755'
-  when: cargo_exist.rc != 0
+# - name: Download rustup installer script
+#   ansible.builtin.get_url:
+#     url: https://sh.rustup.rs
+#     dest: /tmp/rustup-init.sh
+#     mode: '0755'
+#   when: cargo_exist.rc != 0
 
-- name: Install Rust via rustup (unattended)
-  ansible.builtin.command:
-    cmd: /tmp/rustup-init.sh -y --no-modify-path
-    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustc"
-  when: cargo_exist.rc != 0
+# - name: Install Rust via rustup (unattended)
+#   ansible.builtin.command:
+#     cmd: /tmp/rustup-init.sh -y --no-modify-path
+#     creates: "{{ ansible_env.HOME }}/.cargo/bin/rustc"
+#   when: cargo_exist.rc != 0
 
-- name: Ensure Rust environment is sourced
-  ansible.builtin.shell: 'source "{{ ansible_env.HOME }}/.cargo/env"'
-  args:
-    executable: /bin/bash
+# - name: Ensure Rust environment is sourced
+#   ansible.builtin.shell: 'source "{{ ansible_env.HOME }}/.cargo/env"'
+#   args:
+#     executable: /bin/bash
 
-- name: Check if uv is already installed
-  ansible.builtin.command:
-    cmd: command -v uv
-  register: uv_exist
-  changed_when: false
-  ignore_errors: true
+# - name: Check if uv is already installed
+#   ansible.builtin.command:
+#     cmd: command -v uv
+#   register: uv_exist
+#   changed_when: false
+#   ignore_errors: true
 
-- name: Install uv via Astral installer
-  ansible.builtin.shell: |
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-  args:
-    creates: "{{ ansible_env.HOME }}/.local/bin/uv"
-    executable: /bin/bash
-  when: uv_exist.rc != 0
+# - name: Install uv via Astral installer
+#   ansible.builtin.shell: |
+#     curl -LsSf https://astral.sh/uv/install.sh | sh
+#   args:
+#     creates: "{{ ansible_env.HOME }}/.local/bin/uv"
+#     executable: /bin/bash
+#   when: uv_exist.rc != 0
 
-- name: Add ~/.local/bin to PATH
-  ansible.builtin.lineinfile:
-    path: "{{ ansible_env.HOME }}/.profile"
-    regexp: '^(export PATH=.*\\.local/bin)'
-    line: 'export PATH="$HOME/.local/bin:$PATH"'
-    insertafter: EOF
-    state: present
+# - name: Add ~/.local/bin to PATH
+#   ansible.builtin.lineinfile:
+#     path: "{{ ansible_env.HOME }}/.profile"
+#     regexp: '^(export PATH=.*\\.local/bin)'
+#     line: 'export PATH="$HOME/.local/bin:$PATH"'
+#     insertafter: EOF
+#     state: present
 
 - name: Install Podman
   ansible.builtin.apt:
@@ -90,51 +91,3 @@
   ansible.builtin.debug:
     msg: "Distrobox installation failed or is unavailable"
   when: distrobox_check.rc != 0
-
-- name: Create APT keyrings directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-  become: true
-
-- name: Download the Charm GPG key
-  ansible.builtin.get_url:
-    url: https://repo.charm.sh/apt/gpg.key
-    dest: /etc/apt/keyrings/charm.gpg
-    mode: '0644'
-  become: true
-
-- name: Convert GPG key to binary format
-  ansible.builtin.command:
-    cmd: gpg --dearmor --yes -o /etc/apt/keyrings/charm.gpg /etc/apt/keyrings/charm.gpg
-    args:
-      creates: /etc/apt/keyrings/charm.gpg
-  become: true
-
-- name: Add Charm repository to APT sources
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *"
-    filename: charm
-    state: present
-    update_cache: yes
-  become: true
-
-- name: Install glow package from Charm repo
-  ansible.builtin.apt:
-    name: glow
-    state: present
-  become: true
-
-- name: Verify glow installation
-  ansible.builtin.command:
-    cmd: glow --version
-  register: glow_check
-  changed_when: false
-  ignore_errors: true
-  become: false
-
-- name: Report if glow installation failed
-  ansible.builtin.debug:
-    msg: "glow installation failed"
-  when: glow_check.rc != 0
