@@ -60,81 +60,39 @@
   become: true
   when: ping_result is failed
 
-# Install zsh and Oh My Zsh (as the non-root user)
-- name: Ensure git and zsh installed
-  ansible.builtin.apt:
-    name:
-      - git
-      - zsh
+
+- name: Ensure fontconfig is installed
+  apt:
+    name: fontconfig
     state: present
     update_cache: yes
   become: true
 
-- name: Check if ~/.oh-my-zsh exists
-  ansible.builtin.stat:
-    path: "/home/{{ ansible_user_id }}/.oh-my-zsh"
-  register: omz_stat
-  become: false
-
-- name: Skip Oh My Zsh installation if already present
-  ansible.builtin.debug:
-    msg: "Oh My Zsh already installed—skipping."
-  when: omz_stat.stat.exists
-
-- name: Run Oh My Zsh installer
-  ansible.builtin.shell: |
-    sh -c "$(curl -fsSL https://gitee.com/mcornella/ohmyzsh/raw/master/tools/install.sh)"
-  args:
-    creates: "/home/{{ ansible_user_id }}/.oh-my-zsh"
-    chdir: "/home/{{ ansible_user_id }}"
-  become: false
-  when: not omz_stat.stat.exists
-
-- name: Set default shell to zsh for the target user
-  ansible.builtin.user:
-    name: "{{ ansible_user_id }}"
-    shell: /usr/bin/zsh
+- name: Copy Meslo Nerd Fonts from role files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/share/fonts/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - "../fonts/MesloLGS NF Regular.ttf"
+    - "../fonts/MesloLGS NF Bold.ttf"
+    - "../fonts/MesloLGS NF Italic.ttf"
+    - "../fonts/MesloLGS NF Bold Italic.ttf"
+  register: meslo_download
   become: true
 
+- name: Set correct ownership on font files
+  file:
+    path: "/usr/local/share/fonts/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ meslo_download.results | map(attribute='dest') | map('basename') | list }}"
+  become: true
 
-- name: Install Zsh plugins if OMZ is present
-  block:
-    - name: Clone zsh-autosuggestions
-      git:
-        repo: https://github.com/zsh-users/zsh-autosuggestions.git
-        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
-        depth: 1
-
-    - name: Clone zsh-syntax-highlighting
-      git:
-        repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
-        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
-        depth: 1
-
-    - name: Optionally install fast-syntax-highlighting plugin
-      git:
-        repo: https://github.com/zdharma-continuum/fast-syntax-highlighting.git
-        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/fast-syntax-highlighting"
-        depth: 1
-      when: fast_syntax|default(false)
-
-    - name: Ensure plugins are enabled in .zshrc
-      lineinfile:
-        path: "/home/{{ ansible_user_id }}/.zshrc"
-        regexp: '^plugins=\('
-        line: >-
-          plugins=(git zsh-autosuggestions zsh-syntax-highlighting
-                   {{ 'fast-syntax-highlighting' if fast_syntax|default(false) else '' }})
-        backrefs: yes
-
-    - name: Source highlight plugin in correct order
-      lineinfile:
-        path: "/home/{{ ansible_user_id }}/.zshrc"
-        insertafter: 'plugins=\('
-        line: 'source $ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
-        state: present
-  when: omz_stat.stat.exists
-  become: false
-
-
-
+- name: Refresh system font cache
+  ansible.builtin.command:
+    cmd: fc-cache -fv
+  become: true

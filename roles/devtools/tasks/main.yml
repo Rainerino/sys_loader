@@ -90,3 +90,51 @@
   ansible.builtin.debug:
     msg: "Distrobox installation failed or is unavailable"
   when: distrobox_check.rc != 0
+
+- name: Create APT keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: Download the Charm GPG key
+  ansible.builtin.get_url:
+    url: https://repo.charm.sh/apt/gpg.key
+    dest: /etc/apt/keyrings/charm.gpg
+    mode: '0644'
+  become: true
+
+- name: Convert GPG key to binary format
+  ansible.builtin.command:
+    cmd: gpg --dearmor --yes -o /etc/apt/keyrings/charm.gpg /etc/apt/keyrings/charm.gpg
+    args:
+      creates: /etc/apt/keyrings/charm.gpg
+  become: true
+
+- name: Add Charm repository to APT sources
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *"
+    filename: charm
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Install glow package from Charm repo
+  ansible.builtin.apt:
+    name: glow
+    state: present
+  become: true
+
+- name: Verify glow installation
+  ansible.builtin.command:
+    cmd: glow --version
+  register: glow_check
+  changed_when: false
+  ignore_errors: true
+  become: false
+
+- name: Report if glow installation failed
+  ansible.builtin.debug:
+    msg: "glow installation failed"
+  when: glow_check.rc != 0
