@@ -1,60 +1,12 @@
 ---
-  - name: Ensure Node.js and npm are installed
-    ansible.builtin.apt:
-      name:
-        - nodejs
-        - npm
-      state: present
-      update_cache: yes
-    become: true
-
-# - name: Check if Rust (cargo) is already installed
-#   ansible.builtin.command:
-#     cmd: command -v cargo
-#   register: cargo_exist
-#   changed_when: false
-#   ignore_errors: true
-
-# - name: Download rustup installer script
-#   ansible.builtin.get_url:
-#     url: https://sh.rustup.rs
-#     dest: /tmp/rustup-init.sh
-#     mode: '0755'
-#   when: cargo_exist.rc != 0
-
-# - name: Install Rust via rustup (unattended)
-#   ansible.builtin.command:
-#     cmd: /tmp/rustup-init.sh -y --no-modify-path
-#     creates: "{{ ansible_env.HOME }}/.cargo/bin/rustc"
-#   when: cargo_exist.rc != 0
-
-# - name: Ensure Rust environment is sourced
-#   ansible.builtin.shell: 'source "{{ ansible_env.HOME }}/.cargo/env"'
-#   args:
-#     executable: /bin/bash
-
-# - name: Check if uv is already installed
-#   ansible.builtin.command:
-#     cmd: command -v uv
-#   register: uv_exist
-#   changed_when: false
-#   ignore_errors: true
-
-# - name: Install uv via Astral installer
-#   ansible.builtin.shell: |
-#     curl -LsSf https://astral.sh/uv/install.sh | sh
-#   args:
-#     creates: "{{ ansible_env.HOME }}/.local/bin/uv"
-#     executable: /bin/bash
-#   when: uv_exist.rc != 0
-
-# - name: Add ~/.local/bin to PATH
-#   ansible.builtin.lineinfile:
-#     path: "{{ ansible_env.HOME }}/.profile"
-#     regexp: '^(export PATH=.*\\.local/bin)'
-#     line: 'export PATH="$HOME/.local/bin:$PATH"'
-#     insertafter: EOF
-#     state: present
+- name: Ensure Node.js and npm are installed
+  ansible.builtin.apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+    update_cache: yes
+  become: true
 
 - name: Install Podman
   ansible.builtin.apt:
