@@ -23,6 +23,7 @@
       - tmux
       - software-properties-common
       - openssh-server
+      - openssh-client
       - radeontop
       - lm-sensors
       - smartmontools
