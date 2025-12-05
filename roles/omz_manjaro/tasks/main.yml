@@ -1,0 +1,99 @@
+---
+- name: Ensure git and zsh installed
+  community.general.pacman:
+    name:
+      - git
+      - zsh
+    state: present
+  become: true
+
+- name: Check if ~/.oh-my-zsh exists
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user_id }}/.oh-my-zsh"
+  register: omz_stat
+  become: false
+
+- name: Skip Oh My Zsh installation if already present
+  ansible.builtin.debug:
+    msg: "Oh My Zsh already installed—skipping."
+  when: omz_stat.stat.exists
+
+- name: Run Oh My Zsh installer
+  ansible.builtin.shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  args:
+    creates: "/home/{{ ansible_user_id }}/.oh-my-zsh"
+    chdir: "/home/{{ ansible_user_id }}"
+  become: false
+  when: not omz_stat.stat.exists
+
+- name: Set default shell to zsh for the target user
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    shell: /usr/bin/zsh
+  become: true
+
+- name: Install Zsh tools plugins block if OMZ present
+  block:
+    - name: Clone zsh-autosuggestions plugin
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+        depth: 1
+
+    - name: Clone fast-syntax-highlighting plugin
+      ansible.builtin.git:
+        repo: https://github.com/zdharma-continuum/fast-syntax-highlighting.git
+        dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/plugins/fast-syntax-highlighting"
+        depth: 1
+
+    - name: Ensure plugins are enabled in .zshrc
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user_id }}/.zshrc"
+        create: true
+        regexp: '^plugins=\('
+        line: >-
+          plugins=(git zsh-autosuggestions fast-syntax-highlighting)
+        backrefs: yes
+
+    - name: Source fast-syntax-highlighting plugin explicitly
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user_id }}/.zshrc"
+        insertafter: EOF
+        line: 'source $ZSH_CUSTOM/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh'
+        state: present
+
+  when: omz_stat.stat.exists
+  become: false
+
+- name: Check if Powerlevel10k theme exists
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/themes/powerlevel10k"
+  register: p10k_stat
+  become: false
+
+- name: Clone Powerlevel10k theme if missing
+  ansible.builtin.git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: "/home/{{ ansible_user_id }}/.oh-my-zsh/custom/themes/powerlevel10k"
+    depth: 1
+  when: not p10k_stat.stat.exists
+  become: false
+
+- name: Set ZSH_THEME to powerlevel10k in .zshrc
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user_id }}/.zshrc"
+    regexp: '^ZSH_THEME='
+    line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
+    state: present
+    create: true
+  become: false
+
+- name: Ensure ~/.p10k.zsh configuration file is sourced
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user_id }}/.zshrc"
+    insertafter: '^ZSH_THEME='
+    line: '[[ -f "${HOME}/.p10k.zsh" ]] && source "${HOME}/.p10k.zsh"'
+    state: present
+  become: false
+

@@ -1,0 +1,15 @@
+---
+- name: Install v2raya and v2ray from AUR using yay
+  become: false
+  ansible.builtin.shell: |
+    yay -S --noconfirm v2raya v2ray
+  args:
+    creates: /usr/bin/v2raya
+
+- name: Ensure v2raya service is enabled and running
+  ansible.builtin.systemd:
+    name: v2raya
+    enabled: true
+    state: started
+  become: true
+

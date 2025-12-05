@@ -1,0 +1,10 @@
+- name: Configure Manjaro i3 system
+  hosts: manjaro
+  remote_user: "{{ ansible_user_id }}"
+  become: false
+  roles:
+    - common_manjaro
+    - devtools_manjaro
+    - omz_manjaro
+    # - v2raya_manjaro
+

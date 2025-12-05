@@ -1,0 +1,43 @@
+---
+- name: Ensure Node.js and npm are installed
+  community.general.pacman:
+    name:
+      - nodejs
+      - npm
+    state: present
+  become: true
+
+- name: Install Podman
+  community.general.pacman:
+    name: podman
+    state: present
+  become: true
+
+- name: Verify Podman installed
+  ansible.builtin.command:
+    cmd: podman --version
+  changed_when: false
+  register: podman_check
+  ignore_errors: true
+  become: false
+
+- name: Install Distrobox
+  community.general.pacman:
+    name: distrobox
+    state: present
+  become: true
+  when: podman_check.rc == 0
+
+- name: Verify Distrobox is available
+  ansible.builtin.command:
+    cmd: distrobox --version
+  changed_when: false
+  register: distrobox_check
+  ignore_errors: true
+  become: false
+
+- name: Inform if Distrobox not available
+  ansible.builtin.debug:
+    msg: "Distrobox installation failed or is unavailable"
+  when: distrobox_check.rc != 0
+

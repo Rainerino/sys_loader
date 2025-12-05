@@ -3,8 +3,8 @@
   remote_user: "{{ ansible_user_id }}"
   become: false
   roles:
-    # - regolith
-    # - common 
-    # - devtools
-    # - omz
-    - v2raya
+    - regolith_ubuntu
+    - common_ubuntu
+    - devtools_ubuntu
+    - omz_ubuntu
+    # - v2raya_ubuntu
