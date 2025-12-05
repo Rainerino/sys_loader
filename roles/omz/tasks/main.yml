@@ -1,0 +1,77 @@
+---
+# Shared Oh My Zsh role - assumes git and zsh are already installed
+
+- name: Check if ~/.oh-my-zsh exists
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.oh-my-zsh"
+  register: omz_stat
+  become: false
+
+- name: Run Oh My Zsh installer
+  ansible.builtin.shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  args:
+    creates: "{{ ansible_env.HOME }}/.oh-my-zsh"
+    chdir: "{{ ansible_env.HOME }}"
+  become: false
+  when: not omz_stat.stat.exists
+
+- name: Set default shell to zsh for the target user
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    shell: /usr/bin/zsh
+  become: true
+
+- name: Clone zsh-autosuggestions plugin
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions.git
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+    depth: 1
+  become: false
+
+- name: Clone fast-syntax-highlighting plugin
+  ansible.builtin.git:
+    repo: https://github.com/zdharma-continuum/fast-syntax-highlighting.git
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/fast-syntax-highlighting"
+    depth: 1
+  become: false
+
+- name: Ensure plugins are enabled in .zshrc
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    regexp: '^plugins=\('
+    line: 'plugins=(git zsh-autosuggestions fast-syntax-highlighting)'
+    backrefs: yes
+  become: false
+
+- name: Source fast-syntax-highlighting plugin explicitly
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    insertafter: EOF
+    line: 'source $ZSH_CUSTOM/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh'
+    state: present
+  become: false
+
+- name: Clone Powerlevel10k theme
+  ansible.builtin.git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/powerlevel10k"
+    depth: 1
+  become: false
+
+- name: Set ZSH_THEME to powerlevel10k in .zshrc
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    regexp: '^ZSH_THEME='
+    line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
+    state: present
+  become: false
+
+- name: Ensure ~/.p10k.zsh configuration file is sourced
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    insertafter: '^ZSH_THEME='
+    line: '[[ -f "${HOME}/.p10k.zsh" ]] && source "${HOME}/.p10k.zsh"'
+    state: present
+  become: false
+

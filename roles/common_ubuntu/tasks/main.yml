@@ -1,5 +1,6 @@
 ---
-# Update packages and install essentials (run as root)
+# Ubuntu package installation
+
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: yes
@@ -12,7 +13,7 @@
 
 - name: Install common packages
   ansible.builtin.apt:
-    name: 
+    name:
       - build-essential
       - cmake
       - curl
@@ -21,66 +22,34 @@
       - unzip
       - htop
       - tmux
+      - zsh
       - software-properties-common
       - openssh-server
       - openssh-client
       - radeontop
       - lm-sensors
       - smartmontools
+      - fontconfig
     state: present
   become: true
 
 - name: Install Tailscale
   ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
   become: true
 
-
-# Configure Git (for the non-root user)
-- name: Ensure git is configured (user)
-  ansible.builtin.git_config:
-    name: user.name
-    value: "Rainerino"
-    scope: global
-  become: false
-
-- name: Set git email (user)
-  ansible.builtin.git_config:
-    name: user.email
-    value: "albertyanyy@gmail.com"
-    scope: global
-  become: false
-
-# Only modify system /etc/hosts via root if needed
-- name: Check connectivity to raw.githubusercontent.com
-  ansible.builtin.command:
-    cmd: ping -c1 -W2 raw.githubusercontent.com
-  register: ping_result
-  changed_when: false
-  ignore_errors: true
-  become: false
-
-- name: Add hosts entry if raw.githubusercontent.com is unreachable
-  ansible.builtin.lineinfile:
-    dest: /etc/hosts
-    regexp: '^185\.199\.108\.133\s+raw\.githubusercontent\.com'
-    line: '185.199.108.133 raw.githubusercontent.com'
-    state: present
-    backup: yes
-  become: true
-  when: ping_result is failed
-
-
-- name: Ensure fontconfig is installed
-  apt:
-    name: fontconfig
-    state: present
-    update_cache: yes
+- name: Ensure fonts directory exists
+  ansible.builtin.file:
+    path: /usr/local/share/fonts
+    state: directory
+    mode: '0755'
   become: true
 
-- name: Copy Meslo Nerd Fonts from role files
+- name: Copy Meslo Nerd Fonts
   ansible.builtin.copy:
     src: "{{ item }}"
-    dest: "/usr/local/share/fonts/{{ item }}"
+    dest: "/usr/local/share/fonts/"
     owner: root
     group: root
     mode: '0644'

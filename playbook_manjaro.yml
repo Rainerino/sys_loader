@@ -2,9 +2,21 @@
   hosts: manjaro
   remote_user: "{{ ansible_user_id }}"
   become: false
+  gather_facts: false
+  pre_tasks:
+    - name: Bootstrap Python (for Docker/minimal installs)
+      ansible.builtin.raw: |
+        which python3 || (pacman -Sy --noconfirm python)
+      become: true
+      changed_when: false
+    - name: Gather facts after Python installed
+      ansible.builtin.setup:
   roles:
+    # Distro-specific
     - common_manjaro
     - devtools_manjaro
-    - omz_manjaro
+    # Shared
+    - gitconfig
+    - nvm
+    - omz
     # - v2raya_manjaro
-

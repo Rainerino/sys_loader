@@ -2,9 +2,22 @@
   hosts: ubuntu
   remote_user: "{{ ansible_user_id }}"
   become: false
+  gather_facts: false
+  pre_tasks:
+    - name: Bootstrap Python (for Docker/minimal installs)
+      ansible.builtin.raw: |
+        which python3 || (apt-get update && apt-get install -y python3)
+      become: true
+      changed_when: false
+    - name: Gather facts after Python installed
+      ansible.builtin.setup:
   roles:
-    - regolith_ubuntu
+    # Distro-specific
     - common_ubuntu
     - devtools_ubuntu
-    - omz_ubuntu
+    - regolith_ubuntu
+    # Shared
+    - gitconfig
+    - nvm
+    - omz
     # - v2raya_ubuntu

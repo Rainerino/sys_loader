@@ -1,0 +1,37 @@
+---
+# Shared git config role
+
+- name: Set git user.name
+  ansible.builtin.git_config:
+    name: user.name
+    value: "Rainerino"
+    scope: global
+  become: false
+
+- name: Set git user.email
+  ansible.builtin.git_config:
+    name: user.email
+    value: "albertyanyy@gmail.com"
+    scope: global
+  become: false
+
+- name: Check connectivity to raw.githubusercontent.com
+  ansible.builtin.uri:
+    url: https://raw.githubusercontent.com
+    method: HEAD
+    timeout: 5
+  register: github_check
+  changed_when: false
+  ignore_errors: true
+  become: false
+
+- name: Add hosts entry if raw.githubusercontent.com is unreachable
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '^185\.199\.108\.133\s+raw\.githubusercontent\.com'
+    line: '185.199.108.133 raw.githubusercontent.com'
+    state: present
+    backup: yes
+  become: true
+  when: github_check is failed
+
