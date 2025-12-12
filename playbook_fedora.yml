@@ -1,0 +1,23 @@
+- name: Configure Fedora system
+  hosts: fedora
+  remote_user: "{{ ansible_user_id }}"
+  become: false
+  gather_facts: false
+  pre_tasks:
+    - name: Bootstrap Python (for Docker/minimal installs)
+      ansible.builtin.raw: |
+        which python3 || (dnf install -y python3)
+      become: true
+      changed_when: false
+    - name: Gather facts after Python installed
+      ansible.builtin.setup:
+  roles:
+    # Distro-specific
+    - common_fedora
+    - devtools_fedora
+    # Shared
+    - gitconfig
+    - nvm
+    - omz
+    # - v2raya_fedora
+

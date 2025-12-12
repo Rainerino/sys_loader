@@ -1,0 +1,39 @@
+---
+# Fedora dev tools - package installation only
+
+- name: Install Podman
+  ansible.builtin.shell: dnf install -y --setopt=install_weak_deps=False podman
+  become: true
+  changed_when: true
+
+- name: Verify Podman installed
+  ansible.builtin.command: podman --version
+  changed_when: false
+  register: podman_check
+  ignore_errors: true
+
+- name: Install Distrobox
+  ansible.builtin.shell: dnf install -y --setopt=install_weak_deps=False distrobox
+  become: true
+  changed_when: true
+  when: podman_check.rc == 0
+
+- name: Check if clash-verge is installed
+  ansible.builtin.command: rpm -q clash-verge
+  register: clash_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Download clash-verge-rev .rpm
+  ansible.builtin.get_url:
+    url: https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.2.3/Clash.Verge_2.2.3_x86_64.rpm
+    dest: /tmp/clash-verge.rpm
+    mode: '0644'
+  when: clash_check.rc != 0
+
+- name: Install clash-verge-rev
+  ansible.builtin.shell: dnf install -y /tmp/clash-verge.rpm
+  become: true
+  changed_when: true
+  when: clash_check.rc != 0
+
