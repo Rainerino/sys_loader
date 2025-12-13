@@ -20,22 +20,22 @@
   become: true
   when: podman_check.rc == 0
 
-- name: Check if clash-verge is installed
-  ansible.builtin.command: dpkg -l clash-verge
-  register: clash_check
-  changed_when: false
-  ignore_errors: true
+# - name: Check if clash-verge is installed
+#   ansible.builtin.command: dpkg -l clash-verge
+#   register: clash_check
+#   changed_when: false
+#   ignore_errors: true
 
-- name: Download clash-verge-rev .deb
-  ansible.builtin.get_url:
-    url: https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.2.3/Clash.Verge_2.2.3_amd64.deb
-    dest: /tmp/clash-verge.deb
-    mode: '0644'
-  when: clash_check.rc != 0
+# - name: Download clash-verge-rev .deb
+#   ansible.builtin.get_url:
+#     url: https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.2.3/Clash.Verge_2.2.3_amd64.deb
+#     dest: /tmp/clash-verge.deb
+#     mode: '0644'
+#   when: clash_check.rc != 0
 
-- name: Install clash-verge-rev
-  ansible.builtin.apt:
-    deb: /tmp/clash-verge.deb
-    state: present
-  become: true
-  when: clash_check.rc != 0
+# - name: Install clash-verge-rev
+#   ansible.builtin.apt:
+#     deb: /tmp/clash-verge.deb
+#     state: present
+#   become: true
+#   when: clash_check.rc != 0
