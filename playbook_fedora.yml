@@ -14,10 +14,10 @@
   roles:
     # Distro-specific
     - common_fedora
-    - devtools_fedora
+    # - devtools_fedora
     # Shared
-    - gitconfig
-    - nvm
-    - omz
+    # - gitconfig
+    # - nvm
+    # - omz
     # - v2raya_fedora
 

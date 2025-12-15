@@ -12,45 +12,45 @@
   become: true
   changed_when: true
 
-# - name: Install Tailscale
-#   ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
-#   args:
-#     creates: /usr/bin/tailscale
-#   become: true
+- name: Install Tailscale
+  ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+  become: true
 
-# - name: Ensure fonts directory exists
-#   ansible.builtin.file:
-#     path: /usr/local/share/fonts
-#     state: directory
-#     mode: '0755'
-#   become: true
+- name: Ensure fonts directory exists
+  ansible.builtin.file:
+    path: /usr/local/share/fonts
+    state: directory
+    mode: '0755'
+  become: true
 
-# - name: Copy Meslo Nerd Fonts
-#   ansible.builtin.copy:
-#     src: "{{ item }}"
-#     dest: "/usr/local/share/fonts/"
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   loop:
-#     - "../fonts/MesloLGS NF Regular.ttf"
-#     - "../fonts/MesloLGS NF Bold.ttf"
-#     - "../fonts/MesloLGS NF Italic.ttf"
-#     - "../fonts/MesloLGS NF Bold Italic.ttf"
-#   register: meslo_download
-#   become: true
+- name: Copy Meslo Nerd Fonts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/share/fonts/"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - "../fonts/MesloLGS NF Regular.ttf"
+    - "../fonts/MesloLGS NF Bold.ttf"
+    - "../fonts/MesloLGS NF Italic.ttf"
+    - "../fonts/MesloLGS NF Bold Italic.ttf"
+  register: meslo_download
+  become: true
 
-# - name: Set correct ownership on font files
-#   file:
-#     path: "/usr/local/share/fonts/{{ item }}"
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   loop: "{{ meslo_download.results | map(attribute='dest') | map('basename') | list }}"
-#   become: true
+- name: Set correct ownership on font files
+  file:
+    path: "/usr/local/share/fonts/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ meslo_download.results | map(attribute='dest') | map('basename') | list }}"
+  become: true
 
-# - name: Refresh system font cache
-#   ansible.builtin.command:
-#     cmd: fc-cache -fv
-#   become: true
+- name: Refresh system font cache
+  ansible.builtin.command:
+    cmd: fc-cache -fv
+  become: true
 
